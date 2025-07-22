@@ -5,8 +5,9 @@ use std::path::PathBuf;
 use tabled::{
     Table, Tabled,
     settings::{
-        Modify, Panel, Remove, Style, location::ByColumnName, object::Rows,
-        themes::BorderCorrection, width::Wrap,
+        Modify, Panel, Remove, Style, Width,
+        object::{Columns, Rows},
+        themes::BorderCorrection,
     },
 };
 
@@ -73,16 +74,13 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
     shortcuts.insert(
         "Movement",
         vec![
-            Shortcut::new("Ctrl+a", "Go to the beginning of the line (Home)"),
-            Shortcut::new("Ctrl+e", "Go to the End of the line (End)"),
-            Shortcut::new("Ctrl+f", "Forward one character (Right arrow)"),
-            Shortcut::new("Ctrl+b", "Backward one character (Left arrow)"),
-            Shortcut::new("Alt+f", "Forward (right) one word (Alt-Right arrow)"),
-            Shortcut::new("Alt+b", "Back (left) one word (Alt-Left arrow)"),
-            Shortcut::new(
-                "Ctrl+xx",
-                "Toggle between the start of line and current cursor position",
-            ),
+            Shortcut::new("Ctrl+a", "Go to line start (Home)"),
+            Shortcut::new("Ctrl+e", "Go to line end (End)"),
+            Shortcut::new("Ctrl+f", "Move forward one char (Right)"),
+            Shortcut::new("Ctrl+b", "Move back one char (Left)"),
+            Shortcut::new("Alt+f", "Move forward one word (Alt+Right)"),
+            Shortcut::new("Alt+b", "Move back one word (Alt+Left)"),
+            Shortcut::new("Ctrl+xx", "Toggle between line start and cursor"),
         ],
     );
 
@@ -90,75 +88,75 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
     shortcuts.insert(
         "Edit",
         vec![
-            Shortcut::new("Ctrl+l", "Clear the Screen, similar to the clear command"),
-            Shortcut::new("Alt+Del", "Delete the Word before the cursor"),
-            Shortcut::new("Alt+d", "Delete the Word after the cursor"),
-            Shortcut::new("Ctrl+d", "Delete character under the cursor"),
-            Shortcut::new("Ctrl+h", "Delete character before the cursor (Backspace)"),
-            Shortcut::new("Ctrl+w", "Cut the Word before the cursor to the clipboard"),
-            Shortcut::new("Ctrl+k", "Cut the Line after the cursor to the clipboard"),
-            Shortcut::new(
-                "Ctrl+u",
-                "Cut/delete the Line before the cursor to the clipboard",
-            ),
+            Shortcut::new("Ctrl+l", "Clear screen"),
+            Shortcut::new("Alt+Del", "Delete word before cursor"),
+            Shortcut::new("Alt+d", "Delete word after cursor"),
+            Shortcut::new("Ctrl+d", "Delete char under cursor"),
+            Shortcut::new("Ctrl+h", "Delete char before cursor (Backspace)"),
+            Shortcut::new("Ctrl+w", "Cut word before cursor to clipboard"),
+            Shortcut::new("Ctrl+k", "Cut line after cursor to clipboard"),
+            Shortcut::new("Ctrl+u", "Cut line before cursor to clipboard"),
             Shortcut::new("Alt+t", "Swap current word with previous"),
-            Shortcut::new(
-                "Ctrl+t",
-                "Swap the last two characters before the cursor (typo)",
-            ),
-            Shortcut::new("Esc+t", "Swap the last two words before the cursor"),
-            Shortcut::new("Ctrl+y", "Paste the last thing to be cut (yank)"),
-            Shortcut::new(
-                "Alt+u",
-                "UPPER capitalize every character from the cursor to the end of the current word",
-            ),
-            Shortcut::new(
-                "Alt+l",
-                "Lower the case of every character from the cursor to the end of the current word",
-            ),
-            Shortcut::new(
-                "Alt+c",
-                "Capitalize the character under the cursor and move to the end of the word",
-            ),
-            Shortcut::new(
-                "Alt+r",
-                "Cancel the changes and put back the line as it was in the history (revert)",
-            ),
+            Shortcut::new("Ctrl+t", "Swap last two chars before cursor"),
+            Shortcut::new("Esc+t", "Swap last two words before cursor"),
+            Shortcut::new("Ctrl+y", "Paste from clipboard (yank)"),
+            Shortcut::new("Alt+u", "UPPERCASE word from cursor"),
+            Shortcut::new("Alt+l", "lowercase word from cursor"),
+            Shortcut::new("Alt+c", "Capitalize char and move to word end"),
+            Shortcut::new("Alt+r", "Revert line to history version"),
             Shortcut::new("Ctrl+_", "Undo"),
-            Shortcut::new("Tab", "Tab completion for file/directory names"),
+            Shortcut::new("Tab", "Auto-complete file/directory names"),
         ],
     );
 
     // History shortcuts - command history navigation and search
-    shortcuts.insert("History", vec![
-        Shortcut::new("Ctrl+r", "Recall the last command including the specified character(s). Search the command history as you type"),
-        Shortcut::new("Ctrl+p", "Previous command in history (walk back)"),
-        Shortcut::new("Ctrl+n", "Next command in history (walk forward)"),
-        Shortcut::new("Ctrl+s", "Go back to the next most recent command"),
-        Shortcut::new("Ctrl+o", "Execute the command found via Ctrl+r or Ctrl+s"),
-        Shortcut::new("Ctrl+g", "Escape from history searching mode"),
-        Shortcut::new("!!", "Repeat last command"),
-        Shortcut::new("!n", "Repeat from the last command: args n e.g. !:2 for the second argument"),
-        Shortcut::new("!n:m", "Repeat from the last command: args from n to m. e.g. !:2-3 for the second and third"),
-        Shortcut::new("!n:$", "Repeat from the last command: args n to the last argument"),
-        Shortcut::new("!n:p", "Print last command starting with n"),
-        Shortcut::new("!string", "Print the last command beginning with string"),
-        Shortcut::new("!:q", "Quote the last command with proper Bash escaping applied"),
-        Shortcut::new("!$", "Last argument of previous command"),
-        Shortcut::new("Alt+.", "Last argument of previous command"),
-        Shortcut::new("!*", "All arguments of previous command"),
-        Shortcut::new("^abc^def", "Run previous command, replacing abc with def"),
-    ]);
+    shortcuts.insert(
+        "History",
+        vec![
+            // Shorten this long description
+            Shortcut::new("Ctrl+r", "Search command history as you type"),
+            Shortcut::new("Ctrl+p", "Previous command in history (walk back)"),
+            Shortcut::new("Ctrl+n", "Next command in history (walk forward)"),
+            Shortcut::new("Ctrl+s", "Go back to the next most recent command"),
+            Shortcut::new("Ctrl+o", "Execute the command found via Ctrl+r or Ctrl+s"),
+            Shortcut::new("Ctrl+g", "Escape from history searching mode"),
+            Shortcut::new("!!", "Repeat last command"),
+            Shortcut::new(
+                "!n",
+                "Repeat nth arg from last command (!:2 for second arg)",
+            ),
+            Shortcut::new("!n:m", "Repeat args n to m from last command (!:2-3)"),
+            Shortcut::new(
+                "!n:$",
+                "Repeat from the last command: args n to the last argument",
+            ),
+            Shortcut::new("!n:p", "Print last command starting with n"),
+            Shortcut::new("!string", "Print the last command beginning with string"),
+            Shortcut::new(
+                "!:q",
+                "Quote the last command with proper Bash escaping applied",
+            ),
+            Shortcut::new("!$", "Last argument of previous command"),
+            Shortcut::new("Alt+.", "Last argument of previous command"),
+            Shortcut::new("!*", "All arguments of previous command"),
+            Shortcut::new("^abc^def", "Run previous command, replacing abc with def"),
+        ],
+    );
 
-    // Process shortcuts - process control and management
-    shortcuts.insert("Process", vec![
-        Shortcut::new("Ctrl+c", "Interrupt/Kill whatever you are running (SIGINT)"),
-        Shortcut::new("Ctrl+l", "Clear the screen"),
-        Shortcut::new("Ctrl+s", "Stop output to the screen (for long running verbose commands). Then use PgUp/PgDn for navigation"),
-        Shortcut::new("Ctrl+q", "Allow output to the screen (if previously stopped using command above)"),
-        Shortcut::new("Ctrl+d", "Send an EOF marker, unless disabled by an option, this will close the current shell (EXIT)"),
-        Shortcut::new("Ctrl+z", "Send the signal SIGTSTP to the current task, which suspends it. To return to it later enter 'fg process name' (foreground)"),
-    ]);
+    // Process shortcuts - make these more concise
+    shortcuts.insert(
+        "Process",
+        vec![
+            Shortcut::new("Ctrl+c", "Interrupt/Kill whatever you are running (SIGINT)"),
+            Shortcut::new("Ctrl+l", "Clear the screen"),
+            Shortcut::new("Ctrl+s", "Stop screen output (use PgUp/PgDn to navigate)"),
+            Shortcut::new("Ctrl+d", "Send EOF marker - closes shell if enabled (EXIT)"),
+            Shortcut::new(
+                "Ctrl+z",
+                "Suspend current task (SIGTSTP) - resume with 'fg'",
+            ),
+        ],
+    );
 
     shortcuts
 }
@@ -167,8 +165,8 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
 fn display_shortcuts(shortcuts: &[Shortcut], category: &str) {
     let mut binding = Table::new(shortcuts);
     let table = binding
+        .with(Modify::new(Columns::first()).with(Width::increase(57)))
         .with(Style::blank())
-        .with(Modify::new(ByColumnName::new("Description")).with(Wrap::new(60).keep_words(true)))
         .with(Panel::header(format!("{} related shortcuts", category)))
         .with(BorderCorrection::span())
         .with(Remove::row(Rows::one(1)));
