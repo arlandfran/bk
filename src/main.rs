@@ -1,5 +1,7 @@
 use clap::Parser;
 use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -11,12 +13,14 @@ use std::collections::HashMap;
 Flags can be chained Unix-style: bk -me shows movement and edit shortcuts.
 Run without flags to show all shortcuts organized by category.",
     after_help = "EXAMPLES:
-    bk           Show all shortcuts
-    bk -m        Show movement shortcuts only
-    bk -me       Show movement and edit shortcuts (chained)
-    bk -e -r     Show edit and recall shortcuts (separate)
-    bk --version Show version information"
+    bk             Show all shortcuts
+    bk -m          Show movement shortcuts only
+    bk -me         Show movement and edit shortcuts (chained)
+    bk -e -r       Show edit and recall shortcuts (separate)
+    bk --uninstall Uninstall the bk CLI
+    bk --version   Show version information"
 )]
+
 struct Args {
     /// Show movement related shortcuts
     #[arg(short, long)]
@@ -33,6 +37,10 @@ struct Args {
     /// Show process related shortcuts
     #[arg(short, long)]
     process: bool,
+
+    /// Uninstall the bk CLI
+    #[arg(long)]
+    uninstall: bool,
 }
 
 /// Structure to hold a keyboard shortcut with its key combination and description
@@ -167,8 +175,62 @@ fn display_all_shortcuts(shortcuts_map: &HashMap<&str, Vec<Shortcut>>) {
     }
 }
 
+/// Get the path to the current executable
+fn get_current_exe_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    std::env::current_exe()
+        .map_err(|e| format!("Failed to get current executable path: {}", e).into())
+}
+
+/// Handle the uninstall command
+fn handle_uninstall() -> Result<(), Box<dyn std::error::Error>> {
+    let exe_path = get_current_exe_path()?;
+
+    // Confirm with user before deletion
+    println!("This will permanently delete the 'bk' binary from:");
+    println!("  {}", exe_path.display());
+    println!();
+    print!("Are you sure you want to uninstall? (y/N): ");
+
+    use std::io::{self, Write};
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
+    let input = input.trim().to_lowercase();
+    if input == "y" || input == "yes" {
+        match fs::remove_file(&exe_path) {
+            Ok(()) => {
+                println!(
+                    "✓ Successfully uninstalled 'bk' from {}",
+                    exe_path.display()
+                );
+                println!("Thank you for using bk!");
+            }
+            Err(e) => {
+                eprintln!("✗ Failed to remove binary: {}", e);
+                eprintln!("You may need to run with elevated privileges or remove it manually.");
+                return Err(e.into());
+            }
+        }
+    } else {
+        println!("Uninstall cancelled.");
+    }
+
+    Ok(())
+}
+
 fn main() {
     let args = Args::parse();
+
+    // Handle uninstall first, as it's a special action
+    if args.uninstall {
+        if let Err(e) = handle_uninstall() {
+            eprintln!("Error during uninstall: {}", e);
+            std::process::exit(1);
+        }
+        return;
+    }
 
     // Initialize the shortcuts data structure
     let shortcuts_map = init_shortcuts();
@@ -249,6 +311,10 @@ mod tests {
         // Test parsing with multiple flags
         let args = Args::try_parse_from(&["bk", "-me"]).unwrap();
         assert!(args.movement && args.edit && !args.recall && !args.process);
+
+        // Test parsing uninstall flag
+        let args = Args::try_parse_from(&["bk", "--uninstall"]).unwrap();
+        assert!(!args.movement && !args.edit && !args.recall && !args.process && args.uninstall);
     }
 
     #[test]
@@ -288,5 +354,29 @@ mod tests {
         assert!(result.is_err());
         let error = result.unwrap_err();
         assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+
+        // Test uninstall with value
+        let result = Args::try_parse_from(&["bk", "--uninstall=true"]);
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), clap::error::ErrorKind::TooManyValues);
+    }
+
+    #[test]
+    fn test_get_current_exe_path() {
+        // This should not panic and should return a valid path during testing
+        let result = get_current_exe_path();
+        assert!(result.is_ok());
+        let path = result.unwrap();
+        assert!(path.exists() || path.to_string_lossy().contains("test")); // During tests, the path might be a test runner
+    }
+
+    #[test]
+    fn test_uninstall_flag_combination() {
+        use clap::Parser;
+
+        // Test that uninstall can be combined with other flags (though uninstall takes precedence)
+        let args = Args::try_parse_from(&["bk", "--uninstall", "-m"]).unwrap();
+        assert!(args.uninstall && args.movement);
     }
 }
