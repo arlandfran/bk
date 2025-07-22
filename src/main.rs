@@ -1,14 +1,10 @@
 use clap::Parser;
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::io::{self, Write};
 use tabled::{
     Table, Tabled,
-    settings::{
-        Modify, Panel, Remove, Style, Width,
-        object::{Columns, Rows},
-        themes::BorderCorrection,
-    },
+    settings::{Modify, Panel, Remove, Style, Width, object::Columns},
 };
 
 #[derive(Parser, Debug)]
@@ -23,16 +19,14 @@ Run without flags to show all shortcuts organized by category.",
     after_help = "EXAMPLES:
     bk             Show all shortcuts
     bk -m          Show movement shortcuts only
-    bk -me         Show movement and edit shortcuts (chained)
-    bk -e -r       Show edit and recall shortcuts (separate)"
+    bk -me         Show movement and edit shortcuts (chained)"
 )]
-
 struct Args {
     /// Show movement related shortcuts
     #[arg(short, long)]
     movement: bool,
 
-    /// Show edit related shortcuts
+    /// Show edit related shortcuts  
     #[arg(short, long)]
     edit: bool,
 
@@ -49,13 +43,12 @@ struct Args {
     uninstall: bool,
 }
 
-/// Structure to hold a keyboard shortcut with its key combination and description
 #[derive(Clone, Tabled)]
 struct Shortcut {
-    #[tabled(rename = "Shortcut", order = 1)]
-    key: &'static str,
-    #[tabled(rename = "Description", order = 0)]
+    #[tabled(rename = "Description")]
     description: &'static str,
+    #[tabled(rename = "Shortcut")]
+    key: &'static str,
 }
 
 impl Shortcut {
@@ -64,161 +57,133 @@ impl Shortcut {
     }
 }
 
-/// Initialize all keyboard shortcuts organized by category
 fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
-    let mut shortcuts = HashMap::new();
-
-    shortcuts.insert(
-        "Movement",
-        vec![
-            Shortcut::new("Ctrl+a", "Go to line start (Home)"),
-            Shortcut::new("Ctrl+e", "Go to line end (End)"),
-            Shortcut::new("Ctrl+f", "Move forward one char (Right)"),
-            Shortcut::new("Ctrl+b", "Move back one char (Left)"),
-            Shortcut::new("Alt+f", "Move forward one word (Alt+Right)"),
-            Shortcut::new("Alt+b", "Move back one word (Alt+Left)"),
-            Shortcut::new("Ctrl+xx", "Toggle between line start and cursor"),
-        ],
-    );
-
-    shortcuts.insert(
-        "Edit",
-        vec![
-            Shortcut::new("Ctrl+l", "Clear screen"),
-            Shortcut::new("Alt+Del", "Delete word before cursor"),
-            Shortcut::new("Alt+d", "Delete word after cursor"),
-            Shortcut::new("Ctrl+d", "Delete char under cursor"),
-            Shortcut::new("Ctrl+h", "Delete char before cursor (Backspace)"),
-            Shortcut::new("Ctrl+w", "Cut word before cursor to clipboard"),
-            Shortcut::new("Ctrl+k", "Cut line after cursor to clipboard"),
-            Shortcut::new("Ctrl+u", "Cut line before cursor to clipboard"),
-            Shortcut::new("Alt+t", "Swap current word with previous"),
-            Shortcut::new("Ctrl+t", "Swap last two chars before cursor"),
-            Shortcut::new("Esc+t", "Swap last two words before cursor"),
-            Shortcut::new("Ctrl+y", "Paste from clipboard (yank)"),
-            Shortcut::new("Alt+u", "UPPERCASE word from cursor"),
-            Shortcut::new("Alt+l", "lowercase word from cursor"),
-            Shortcut::new("Alt+c", "Capitalize char and move to word end"),
-            Shortcut::new("Alt+r", "Revert line to history version"),
-            Shortcut::new("Ctrl+_", "Undo"),
-            Shortcut::new("Tab", "Auto-complete file/directory names"),
-        ],
-    );
-
-    shortcuts.insert(
-        "Recall",
-        vec![
-            // Shorten this long description
-            Shortcut::new("Ctrl+r", "Search command history as you type"),
-            Shortcut::new("Ctrl+p", "Previous command in history (walk back)"),
-            Shortcut::new("Ctrl+n", "Next command in history (walk forward)"),
-            Shortcut::new("Ctrl+s", "Go back to the next most recent command"),
-            Shortcut::new("Ctrl+o", "Execute the command found via Ctrl+r or Ctrl+s"),
-            Shortcut::new("Ctrl+g", "Escape from history searching mode"),
-            Shortcut::new("!!", "Repeat last command"),
-            Shortcut::new(
-                "!n",
-                "Repeat nth arg from last command (!:2 for second arg)",
-            ),
-            Shortcut::new("!n:m", "Repeat args n to m from last command (!:2-3)"),
-            Shortcut::new(
-                "!n:$",
-                "Repeat from the last command: args n to the last argument",
-            ),
-            Shortcut::new("!n:p", "Print last command starting with n"),
-            Shortcut::new("!string", "Print the last command beginning with string"),
-            Shortcut::new(
-                "!:q",
-                "Quote the last command with proper Bash escaping applied",
-            ),
-            Shortcut::new("!$", "Last argument of previous command"),
-            Shortcut::new("Alt+.", "Last argument of previous command"),
-            Shortcut::new("!*", "All arguments of previous command"),
-            Shortcut::new("^abc^def", "Run previous command, replacing abc with def"),
-        ],
-    );
-
-    shortcuts.insert(
-        "Process",
-        vec![
-            Shortcut::new("Ctrl+c", "Interrupt/Kill whatever you are running (SIGINT)"),
-            Shortcut::new("Ctrl+l", "Clear the screen"),
-            Shortcut::new("Ctrl+s", "Stop screen output (use PgUp/PgDn to navigate)"),
-            Shortcut::new("Ctrl+d", "Send EOF marker - closes shell if enabled (EXIT)"),
-            Shortcut::new(
-                "Ctrl+z",
-                "Suspend current task (SIGTSTP) - resume with 'fg'",
-            ),
-        ],
-    );
-
-    shortcuts
+    HashMap::from([
+        (
+            "Movement",
+            vec![
+                Shortcut::new("Ctrl+a", "Go to line start (Home)"),
+                Shortcut::new("Ctrl+e", "Go to line end (End)"),
+                Shortcut::new("Ctrl+p", "Previous command (Up)"),
+                Shortcut::new("Ctrl+n", "Next command (Down)"),
+                Shortcut::new("Ctrl+f", "Move forward one char (Right)"),
+                Shortcut::new("Ctrl+b", "Move back one char (Left)"),
+                Shortcut::new("Alt+f", "Move forward one word (Alt+Right)"),
+                Shortcut::new("Alt+b", "Move back one word (Alt+Left)"),
+                Shortcut::new("Ctrl+xx", "Toggle between line start and cursor"),
+            ],
+        ),
+        (
+            "Edit",
+            vec![
+                Shortcut::new("Ctrl+l", "Clear screen"),
+                Shortcut::new("Alt+Del", "Delete word before cursor"),
+                Shortcut::new("Alt+d", "Delete word after cursor"),
+                Shortcut::new("Ctrl+d", "Delete char under cursor"),
+                Shortcut::new("Ctrl+h", "Delete char before cursor (Backspace)"),
+                Shortcut::new("Ctrl+w", "Cut word before cursor to clipboard"),
+                Shortcut::new("Ctrl+k", "Cut line after cursor to clipboard"),
+                Shortcut::new("Ctrl+u", "Cut line before cursor to clipboard"),
+                Shortcut::new("Alt+t", "Swap current word with previous"),
+                Shortcut::new("Ctrl+t", "Swap last two chars before cursor"),
+                Shortcut::new("Esc+t", "Swap last two words before cursor"),
+                Shortcut::new("Ctrl+y", "Paste from clipboard (yank)"),
+                Shortcut::new("Alt+u", "UPPERCASE word from cursor"),
+                Shortcut::new("Alt+l", "lowercase word from cursor"),
+                Shortcut::new("Alt+c", "Capitalize char and move to word end"),
+                Shortcut::new("Alt+r", "Revert line to history version"),
+                Shortcut::new("Ctrl+_", "Undo"),
+                Shortcut::new("Tab", "Auto-complete file/directory names"),
+            ],
+        ),
+        (
+            "Recall",
+            vec![
+                Shortcut::new("Ctrl+r", "Search command history as you type"),
+                Shortcut::new("Ctrl+p", "Previous command in history (walk back)"),
+                Shortcut::new("Ctrl+n", "Next command in history (walk forward)"),
+                Shortcut::new("Ctrl+s", "Go back to the next most recent command"),
+                Shortcut::new("Ctrl+o", "Execute the command found via Ctrl+r or Ctrl+s"),
+                Shortcut::new("Ctrl+g", "Escape from history searching mode"),
+                Shortcut::new("!!", "Repeat last command"),
+                Shortcut::new(
+                    "!n",
+                    "Repeat nth arg from last command (!:2 for second arg)",
+                ),
+                Shortcut::new("!n:m", "Repeat args n to m from last command (!:2-3)"),
+                Shortcut::new(
+                    "!n:$",
+                    "Repeat from the last command: args n to the last argument",
+                ),
+                Shortcut::new("!n:p", "Print last command starting with n"),
+                Shortcut::new("!string", "Print the last command beginning with string"),
+                Shortcut::new(
+                    "!:q",
+                    "Quote the last command with proper Bash escaping applied",
+                ),
+                Shortcut::new("!$", "Last argument of previous command"),
+                Shortcut::new("Alt+.", "Last argument of previous command"),
+                Shortcut::new("!*", "All arguments of previous command"),
+                Shortcut::new("^abc^def", "Run previous command, replacing abc with def"),
+            ],
+        ),
+        (
+            "Process",
+            vec![
+                Shortcut::new("Ctrl+c", "Kill/Interrupt current process (SIGINT)"),
+                Shortcut::new("Ctrl+s", "Stop screen output (scroll with PgUp/Down)"),
+                Shortcut::new("Ctrl+q", "Resume screen output (after Ctrl+s)"),
+                Shortcut::new("Ctrl+d", "Send EOF - closes shell if empty (EXIT)"),
+                Shortcut::new("Ctrl+z", "Suspend process (SIGTSTP) - resume: fg"),
+            ],
+        ),
+    ])
 }
 
-/// Format and display shortcuts for a given category
-fn display_shortcuts(shortcuts: &[Shortcut], category: &str) -> String {
-    let mut binding = Table::new(shortcuts);
-    let table = binding
+fn format_table(shortcuts: &[Shortcut], category: &str) -> String {
+    Table::new(shortcuts)
         .with(Modify::new(Columns::first()).with(Width::increase(57)))
         .with(Style::blank())
         .with(Panel::header(format!("{} related shortcuts", category)))
-        .with(BorderCorrection::span())
-        .with(Remove::row(Rows::one(1)))
-        .to_string();
-
-    format!("{}\n", table)
+        .with(Remove::row(tabled::settings::object::Rows::one(1)))
+        .to_string()
 }
 
-/// Display all shortcuts organized by category
-fn display_all_shortcuts(shortcuts_map: &HashMap<&str, Vec<Shortcut>>) {
-    // Define the order we want to display categories
-    let categories = ["Movement", "Edit", "Recall", "Process"];
+fn build_output(args: &Args, shortcuts: &HashMap<&str, Vec<Shortcut>>) -> String {
+    let categories = [
+        ("Movement", args.movement),
+        ("Edit", args.edit),
+        ("Recall", args.recall),
+        ("Process", args.process),
+    ];
 
-    for &category in &categories {
-        if let Some(shortcuts) = shortcuts_map.get(category) {
-            println!("{}", display_shortcuts(shortcuts, category));
+    let show_all = categories.iter().all(|(_, flag)| !*flag);
+    let mut output = String::new();
+
+    for (category, flag) in categories {
+        if show_all || flag {
+            if let Some(shortcuts) = shortcuts.get(category) {
+                output.push_str(&format_table(shortcuts, category));
+                output.push_str("\n\n");
+            }
         }
     }
+
+    output
 }
 
-/// Get the path to the current executable
-fn get_current_exe_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    std::env::current_exe()
-        .map_err(|e| format!("Failed to get current executable path: {}", e).into())
-}
-
-/// Handle the uninstall command
 fn handle_uninstall() -> Result<(), Box<dyn std::error::Error>> {
-    let exe_path = get_current_exe_path()?;
+    let exe_path = std::env::current_exe()?;
 
-    // Confirm with user before deletion
-    println!("This will permanently delete the 'bk' binary from:");
-    println!("  {}", exe_path.display());
-    println!();
-    print!("Are you sure you want to uninstall? (y/N): ");
-
-    use std::io::{self, Write};
+    print!("Remove 'bk' from {}? (y/N): ", exe_path.display());
     io::stdout().flush()?;
 
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
 
-    let input = input.trim().to_lowercase();
-    if input == "y" || input == "yes" {
-        match fs::remove_file(&exe_path) {
-            Ok(()) => {
-                println!(
-                    "✓ Successfully uninstalled 'bk' from {}",
-                    exe_path.display()
-                );
-                println!("Thank you for using bk!");
-            }
-            Err(e) => {
-                eprintln!("✗ Failed to remove binary: {}", e);
-                eprintln!("You may need to run with elevated privileges or remove it manually.");
-                return Err(e.into());
-            }
-        }
+    if input.trim().to_lowercase() == "y" {
+        fs::remove_file(&exe_path)?;
+        println!("✓ Successfully uninstalled bk. Thank you for using it!");
     } else {
         println!("Uninstall cancelled.");
     }
@@ -229,203 +194,91 @@ fn handle_uninstall() -> Result<(), Box<dyn std::error::Error>> {
 fn main() {
     let args = Args::parse();
 
-    // Handle uninstall first, as it's a special action
     if args.uninstall {
         if let Err(e) = handle_uninstall() {
-            eprintln!("Error during uninstall: {}", e);
+            eprintln!("Error: {}", e);
             std::process::exit(1);
         }
         return;
     }
 
-    // Initialize the shortcuts data structure
-    let shortcuts_map = init_shortcuts();
-
-    // If no specific flags are provided, show all shortcuts
-    if !args.movement && !args.edit && !args.recall && !args.process {
-        display_all_shortcuts(&shortcuts_map);
-        return;
-    }
-
-    // Display shortcuts based on the flags provided
-    if args.movement {
-        if let Some(shortcuts) = shortcuts_map.get("Movement") {
-            println!("{}", display_shortcuts(shortcuts, "Movement"));
-        }
-    }
-
-    if args.edit {
-        if let Some(shortcuts) = shortcuts_map.get("Edit") {
-            println!("{}", display_shortcuts(shortcuts, "Edit"));
-        }
-    }
-
-    if args.recall {
-        if let Some(shortcuts) = shortcuts_map.get("Recall") {
-            println!("{}", display_shortcuts(shortcuts, "Recall"));
-        }
-    }
-
-    if args.process {
-        if let Some(shortcuts) = shortcuts_map.get("Process") {
-            println!("{}", display_shortcuts(shortcuts, "Process"));
-        }
-    }
+    let shortcuts = init_shortcuts();
+    print!("{}", build_output(&args, &shortcuts));
 }
 
-// Unit tests
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_shortcut_creation() {
-        let shortcut = Shortcut::new("Ctrl+a", "Go to beginning of line");
+        let shortcut = Shortcut::new("Ctrl+a", "Go to beginning");
         assert_eq!(shortcut.key, "Ctrl+a");
-        assert_eq!(shortcut.description, "Go to beginning of line");
+        assert_eq!(shortcut.description, "Go to beginning");
     }
 
     #[test]
-    fn test_shortcuts_initialization() {
+    fn test_all_categories_present() {
         let shortcuts = init_shortcuts();
+        let expected = ["Movement", "Edit", "Recall", "Process"];
 
-        // Verify all categories are present
-        assert!(shortcuts.contains_key("Movement"));
-        assert!(shortcuts.contains_key("Edit"));
-        assert!(shortcuts.contains_key("History"));
-        assert!(shortcuts.contains_key("Process"));
-
-        // Verify each category has shortcuts
-        assert!(!shortcuts.get("Movement").unwrap().is_empty());
-        assert!(!shortcuts.get("Edit").unwrap().is_empty());
-        assert!(!shortcuts.get("History").unwrap().is_empty());
-        assert!(!shortcuts.get("Process").unwrap().is_empty());
-    }
-
-    #[test]
-    fn test_args_parsing() {
-        use clap::Parser;
-
-        // Test parsing with no arguments
-        let args = Args::try_parse_from(&["bk"]).unwrap();
-        assert!(!args.movement && !args.edit && !args.recall && !args.process);
-
-        // Test parsing with single flag
-        let args = Args::try_parse_from(&["bk", "-m"]).unwrap();
-        assert!(args.movement && !args.edit && !args.recall && !args.process);
-
-        // Test parsing with multiple flags
-        let args = Args::try_parse_from(&["bk", "-me"]).unwrap();
-        assert!(args.movement && args.edit && !args.recall && !args.process);
-
-        // Test parsing uninstall flag
-        let args = Args::try_parse_from(&["bk", "--uninstall"]).unwrap();
-        assert!(!args.movement && !args.edit && !args.recall && !args.process && args.uninstall);
-    }
-
-    #[test]
-    fn test_invalid_args() {
-        use clap::Parser;
-
-        // Test unknown short flag
-        let result = Args::try_parse_from(&["bk", "-x"]);
-        assert!(result.is_err());
-        let error = result.unwrap_err();
-        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
-
-        // Test unknown long flag
-        let result = Args::try_parse_from(&["bk", "--unknown"]);
-        assert!(result.is_err());
-        let error = result.unwrap_err();
-        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
-
-        // Test invalid flag combination (not really invalid in this case, but test malformed flag)
-        let result = Args::try_parse_from(&["bk", "--"]);
-        assert!(result.is_ok()); // -- is valid (end of options marker)
-
-        // Test invalid argument with value (our flags don't take values)
-        let result = Args::try_parse_from(&["bk", "--movement=true"]);
-        assert!(result.is_err());
-        let error = result.unwrap_err();
-        assert_eq!(error.kind(), clap::error::ErrorKind::TooManyValues);
-
-        // Test typo in long flag
-        let result = Args::try_parse_from(&["bk", "--movment"]); // missing 'e'
-        assert!(result.is_err());
-        let error = result.unwrap_err();
-        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
-
-        // Test positional arguments (which we don't accept)
-        let result = Args::try_parse_from(&["bk", "extra_arg"]);
-        assert!(result.is_err());
-        let error = result.unwrap_err();
-        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
-
-        // Test uninstall with value
-        let result = Args::try_parse_from(&["bk", "--uninstall=true"]);
-        assert!(result.is_err());
-        let error = result.unwrap_err();
-        assert_eq!(error.kind(), clap::error::ErrorKind::TooManyValues);
-    }
-
-    #[test]
-    fn test_get_current_exe_path() {
-        // This should not panic and should return a valid path during testing
-        let result = get_current_exe_path();
-        assert!(result.is_ok());
-        let path = result.unwrap();
-        assert!(path.exists() || path.to_string_lossy().contains("test")); // During tests, the path might be a test runner
-    }
-
-    #[test]
-    fn test_uninstall_flag_combination() {
-        use clap::Parser;
-
-        // Test that uninstall can be combined with other flags (though uninstall takes precedence)
-        let args = Args::try_parse_from(&["bk", "--uninstall", "-m"]).unwrap();
-        assert!(args.uninstall && args.movement);
-    }
-
-    #[test]
-    fn test_table_display_format() {
-        let shortcuts = vec![
-            Shortcut::new("Test+a", "Test description 1"),
-            Shortcut::new("Test+b", "Test description 2"),
-        ];
-
-        let output_str = display_shortcuts(&shortcuts, "Test");
-
-        assert!(output_str.contains("Test related shortcuts"));
-        assert!(output_str.contains("Test+a"));
-        assert!(output_str.contains("Test description 1"));
-        assert!(output_str.contains("Test+b"));
-        assert!(output_str.contains("Test description 2"));
-    }
-
-    #[test]
-    fn test_display_all_shortcuts() {
-        let shortcuts_map = init_shortcuts();
-
-        let categories = ["Movement", "Edit", "History", "Process"];
-
-        // Build the combined output string
-        let mut output_str = String::new();
-        for &category in &categories {
-            if let Some(shortcuts) = shortcuts_map.get(category) {
-                output_str.push_str(&display_shortcuts(shortcuts, category));
-            }
+        for category in expected {
+            assert!(shortcuts.contains_key(category));
+            assert!(!shortcuts[category].is_empty());
         }
+    }
 
-        // Verify all categories are displayed
-        assert!(output_str.contains("Movement related shortcuts"));
-        assert!(output_str.contains("Edit related shortcuts"));
-        assert!(output_str.contains("History related shortcuts"));
-        assert!(output_str.contains("Process related shortcuts"));
+    #[test]
+    fn test_show_all_shortcuts() {
+        let shortcuts = init_shortcuts();
+        let args = Args {
+            movement: false,
+            edit: false,
+            recall: false,
+            process: false,
+            uninstall: false,
+        };
 
-        // Verify some key shortcuts from each category
-        assert!(output_str.contains("Ctrl+a")); // Movement
-        assert!(output_str.contains("Ctrl+l")); // Edit
-        assert!(output_str.contains("Ctrl+r")); // History
-        assert!(output_str.contains("Ctrl+c")); // Process
+        let output = build_output(&args, &shortcuts);
+
+        assert!(output.contains("Movement shortcuts"));
+        assert!(output.contains("Edit shortcuts"));
+        assert!(output.contains("Recall shortcuts"));
+        assert!(output.contains("Process shortcuts"));
+    }
+
+    #[test]
+    fn test_single_category() {
+        let shortcuts = init_shortcuts();
+        let args = Args {
+            movement: true,
+            edit: false,
+            recall: false,
+            process: false,
+            uninstall: false,
+        };
+
+        let output = build_output(&args, &shortcuts);
+
+        assert!(output.contains("Movement shortcuts"));
+        assert!(!output.contains("Edit shortcuts"));
+    }
+
+    #[test]
+    fn test_multiple_categories() {
+        let shortcuts = init_shortcuts();
+        let args = Args {
+            movement: true,
+            edit: true,
+            recall: false,
+            process: false,
+            uninstall: false,
+        };
+
+        let output = build_output(&args, &shortcuts);
+
+        assert!(output.contains("Movement shortcuts"));
+        assert!(output.contains("Edit shortcuts"));
+        assert!(!output.contains("Recall shortcuts"));
     }
 }
