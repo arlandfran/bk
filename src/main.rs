@@ -14,12 +14,14 @@ use tabled::{
     about = "A simple CLI for referencing bash keyboard shortcuts.",
     long_about = "A simple CLI for referencing bash keyboard shortcuts.
 
-Flags can be chained Unix-style: bk -me shows movement and edit shortcuts.
+Flags can be chained Unix-style:
+bk -me shows movement and edit related shortcuts.
 Run without flags to show all shortcuts organized by category.",
     after_help = "EXAMPLES:
     bk             Show all shortcuts
     bk -m          Show movement shortcuts only
-    bk -me         Show movement and edit shortcuts (chained)"
+    bk -me         Show movement and edit shortcuts (chained)
+    bk -e -r       Show edit and recall shortcuts (separate)"
 )]
 struct Args {
     /// Show movement related shortcuts
