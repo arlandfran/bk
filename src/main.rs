@@ -2,6 +2,13 @@ use clap::Parser;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use tabled::{
+    Table, Tabled,
+    settings::{
+        Modify, Panel, Remove, Style, location::ByColumnName, object::Rows,
+        themes::BorderCorrection, width::Wrap,
+    },
+};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -44,9 +51,11 @@ struct Args {
 }
 
 /// Structure to hold a keyboard shortcut with its key combination and description
-#[derive(Clone)]
+#[derive(Clone, Tabled)]
 struct Shortcut {
+    #[tabled(rename = "Shortcut", order = 1)]
     key: &'static str,
+    #[tabled(rename = "Description", order = 0)]
     description: &'static str,
 }
 
@@ -62,7 +71,7 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
 
     // Movement shortcuts - cursor navigation and positioning
     shortcuts.insert(
-        "movement",
+        "Movement",
         vec![
             Shortcut::new("Ctrl+a", "Go to the beginning of the line (Home)"),
             Shortcut::new("Ctrl+e", "Go to the End of the line (End)"),
@@ -79,7 +88,7 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
 
     // Edit shortcuts - text editing and manipulation
     shortcuts.insert(
-        "edit",
+        "Edit",
         vec![
             Shortcut::new("Ctrl+l", "Clear the Screen, similar to the clear command"),
             Shortcut::new("Alt+Del", "Delete the Word before the cursor"),
@@ -121,7 +130,7 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
     );
 
     // History shortcuts - command history navigation and search
-    shortcuts.insert("history", vec![
+    shortcuts.insert("History", vec![
         Shortcut::new("Ctrl+r", "Recall the last command including the specified character(s). Search the command history as you type"),
         Shortcut::new("Ctrl+p", "Previous command in history (walk back)"),
         Shortcut::new("Ctrl+n", "Next command in history (walk forward)"),
@@ -142,7 +151,7 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
     ]);
 
     // Process shortcuts - process control and management
-    shortcuts.insert("process", vec![
+    shortcuts.insert("Process", vec![
         Shortcut::new("Ctrl+c", "Interrupt/Kill whatever you are running (SIGINT)"),
         Shortcut::new("Ctrl+l", "Clear the screen"),
         Shortcut::new("Ctrl+s", "Stop output to the screen (for long running verbose commands). Then use PgUp/PgDn for navigation"),
@@ -156,17 +165,21 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
 
 /// Format and display shortcuts for a given category
 fn display_shortcuts(shortcuts: &[Shortcut], category: &str) {
-    println!("=== {} Shortcuts ===", category.to_uppercase());
-    for shortcut in shortcuts {
-        println!("  {:12} {}", shortcut.key, shortcut.description);
-    }
-    println!();
+    let mut binding = Table::new(shortcuts);
+    let table = binding
+        .with(Style::blank())
+        .with(Modify::new(ByColumnName::new("Description")).with(Wrap::new(60).keep_words(true)))
+        .with(Panel::header(format!("{} related shortcuts", category)))
+        .with(BorderCorrection::span())
+        .with(Remove::row(Rows::one(1)));
+
+    println!("{}\n", table);
 }
 
 /// Display all shortcuts organized by category
 fn display_all_shortcuts(shortcuts_map: &HashMap<&str, Vec<Shortcut>>) {
     // Define the order we want to display categories
-    let categories = ["movement", "edit", "history", "process"];
+    let categories = ["Movement", "Edit", "History", "Process"];
 
     for &category in &categories {
         if let Some(shortcuts) = shortcuts_map.get(category) {
@@ -243,26 +256,26 @@ fn main() {
 
     // Display shortcuts based on the flags provided
     if args.movement {
-        if let Some(shortcuts) = shortcuts_map.get("movement") {
-            display_shortcuts(shortcuts, "movement");
+        if let Some(shortcuts) = shortcuts_map.get("Movement") {
+            display_shortcuts(shortcuts, "Movement");
         }
     }
 
     if args.edit {
-        if let Some(shortcuts) = shortcuts_map.get("edit") {
-            display_shortcuts(shortcuts, "edit");
+        if let Some(shortcuts) = shortcuts_map.get("Edit") {
+            display_shortcuts(shortcuts, "Edit");
         }
     }
 
     if args.recall {
-        if let Some(shortcuts) = shortcuts_map.get("history") {
-            display_shortcuts(shortcuts, "recall");
+        if let Some(shortcuts) = shortcuts_map.get("History") {
+            display_shortcuts(shortcuts, "Recall");
         }
     }
 
     if args.process {
-        if let Some(shortcuts) = shortcuts_map.get("process") {
-            display_shortcuts(shortcuts, "process");
+        if let Some(shortcuts) = shortcuts_map.get("Process") {
+            display_shortcuts(shortcuts, "Process");
         }
     }
 }
