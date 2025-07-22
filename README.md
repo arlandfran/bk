@@ -1,6 +1,6 @@
 # [b]ash[k]eys
 
-A simple CLI that provides a quick reference to ash keyboard shortcuts, written in Rust.
+A simple CLI that provides a quick reference to bash keyboard shortcuts, written in Rust.
 
 ## Features
 
@@ -14,7 +14,7 @@ A simple CLI that provides a quick reference to ash keyboard shortcuts, written 
 
 ### Prerequisites
 - Rust 1.70+ installed on your system
-- Cargo (comes with Rust)
+- Cargo (included in Rust toolchain)
 
 ### Build from source
 
@@ -62,6 +62,9 @@ bk --version
 # Show help
 bk -h
 bk --help
+
+# Remove bk binary from your system
+bk --uninstall
 ```
 
 ### Combine Categories
@@ -166,7 +169,7 @@ cargo test -- --nocapture
 This CLI follows the [Command Line Interface Guidelines](https://clig.dev/) for good CLI design:
 
 - ✅ **Be consistent** - Similar patterns for all flags
-- ✅ **Be helpful** - Clear help text and examples
+- ✅ **Be helpful** - Clear help text and examples, easy to uninstall
 - ✅ **Be fast** - Minimal startup time and dependencies
 - ✅ **Be robust** - Proper error handling and validation
 - ✅ **Be empathetic** - Intuitive interface and good defaults
