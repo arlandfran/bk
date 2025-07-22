@@ -36,7 +36,7 @@ struct Args {
     #[arg(short, long)]
     edit: bool,
 
-    /// Show command recall (history) related shortcuts
+    /// Show command recall related shortcuts
     #[arg(short, long)]
     recall: bool,
 
@@ -106,7 +106,7 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
     );
 
     shortcuts.insert(
-        "History",
+        "Recall",
         vec![
             // Shorten this long description
             Shortcut::new("Ctrl+r", "Search command history as you type"),
@@ -172,7 +172,7 @@ fn display_shortcuts(shortcuts: &[Shortcut], category: &str) -> String {
 /// Display all shortcuts organized by category
 fn display_all_shortcuts(shortcuts_map: &HashMap<&str, Vec<Shortcut>>) {
     // Define the order we want to display categories
-    let categories = ["Movement", "Edit", "History", "Process"];
+    let categories = ["Movement", "Edit", "Recall", "Process"];
 
     for &category in &categories {
         if let Some(shortcuts) = shortcuts_map.get(category) {
@@ -261,7 +261,7 @@ fn main() {
     }
 
     if args.recall {
-        if let Some(shortcuts) = shortcuts_map.get("History") {
+        if let Some(shortcuts) = shortcuts_map.get("Recall") {
             println!("{}", display_shortcuts(shortcuts, "Recall"));
         }
     }
