@@ -15,8 +15,8 @@ use tabled::{
 #[command(
     name = "bk",
     version,
-    about = "A CLI for referencing Bash keyboard shortcuts.",
-    long_about = "A CLI for referencing Bash keyboard shortcuts.
+    about = "A simple CLI for referencing bash keyboard shortcuts.",
+    long_about = "A simple CLI for referencing bash keyboard shortcuts.
 
 Flags can be chained Unix-style: bk -me shows movement and edit shortcuts.
 Run without flags to show all shortcuts organized by category.",
@@ -24,9 +24,7 @@ Run without flags to show all shortcuts organized by category.",
     bk             Show all shortcuts
     bk -m          Show movement shortcuts only
     bk -me         Show movement and edit shortcuts (chained)
-    bk -e -r       Show edit and recall shortcuts (separate)
-    bk --uninstall Uninstall the bk CLI
-    bk --version   Show version information"
+    bk -e -r       Show edit and recall shortcuts (separate)"
 )]
 
 struct Args {
@@ -46,7 +44,7 @@ struct Args {
     #[arg(short, long)]
     process: bool,
 
-    /// Uninstall the bk CLI
+    /// Remove the bk binary from your system
     #[arg(long)]
     uninstall: bool,
 }
@@ -70,7 +68,6 @@ impl Shortcut {
 fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
     let mut shortcuts = HashMap::new();
 
-    // Movement shortcuts - cursor navigation and positioning
     shortcuts.insert(
         "Movement",
         vec![
@@ -84,7 +81,6 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
         ],
     );
 
-    // Edit shortcuts - text editing and manipulation
     shortcuts.insert(
         "Edit",
         vec![
@@ -109,7 +105,6 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
         ],
     );
 
-    // History shortcuts - command history navigation and search
     shortcuts.insert(
         "History",
         vec![
@@ -143,7 +138,6 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
         ],
     );
 
-    // Process shortcuts - make these more concise
     shortcuts.insert(
         "Process",
         vec![
