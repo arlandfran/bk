@@ -162,16 +162,17 @@ fn init_shortcuts() -> HashMap<&'static str, Vec<Shortcut>> {
 }
 
 /// Format and display shortcuts for a given category
-fn display_shortcuts(shortcuts: &[Shortcut], category: &str) {
+fn display_shortcuts(shortcuts: &[Shortcut], category: &str) -> String {
     let mut binding = Table::new(shortcuts);
     let table = binding
         .with(Modify::new(Columns::first()).with(Width::increase(57)))
         .with(Style::blank())
         .with(Panel::header(format!("{} related shortcuts", category)))
         .with(BorderCorrection::span())
-        .with(Remove::row(Rows::one(1)));
+        .with(Remove::row(Rows::one(1)))
+        .to_string();
 
-    println!("{}\n", table);
+    format!("{}\n", table)
 }
 
 /// Display all shortcuts organized by category
@@ -181,7 +182,7 @@ fn display_all_shortcuts(shortcuts_map: &HashMap<&str, Vec<Shortcut>>) {
 
     for &category in &categories {
         if let Some(shortcuts) = shortcuts_map.get(category) {
-            display_shortcuts(shortcuts, category);
+            println!("{}", display_shortcuts(shortcuts, category));
         }
     }
 }
@@ -255,25 +256,25 @@ fn main() {
     // Display shortcuts based on the flags provided
     if args.movement {
         if let Some(shortcuts) = shortcuts_map.get("Movement") {
-            display_shortcuts(shortcuts, "Movement");
+            println!("{}", display_shortcuts(shortcuts, "Movement"));
         }
     }
 
     if args.edit {
         if let Some(shortcuts) = shortcuts_map.get("Edit") {
-            display_shortcuts(shortcuts, "Edit");
+            println!("{}", display_shortcuts(shortcuts, "Edit"));
         }
     }
 
     if args.recall {
         if let Some(shortcuts) = shortcuts_map.get("History") {
-            display_shortcuts(shortcuts, "Recall");
+            println!("{}", display_shortcuts(shortcuts, "Recall"));
         }
     }
 
     if args.process {
         if let Some(shortcuts) = shortcuts_map.get("Process") {
-            display_shortcuts(shortcuts, "Process");
+            println!("{}", display_shortcuts(shortcuts, "Process"));
         }
     }
 }
@@ -295,16 +296,16 @@ mod tests {
         let shortcuts = init_shortcuts();
 
         // Verify all categories are present
-        assert!(shortcuts.contains_key("movement"));
-        assert!(shortcuts.contains_key("edit"));
-        assert!(shortcuts.contains_key("history"));
-        assert!(shortcuts.contains_key("process"));
+        assert!(shortcuts.contains_key("Movement"));
+        assert!(shortcuts.contains_key("Edit"));
+        assert!(shortcuts.contains_key("History"));
+        assert!(shortcuts.contains_key("Process"));
 
         // Verify each category has shortcuts
-        assert!(!shortcuts.get("movement").unwrap().is_empty());
-        assert!(!shortcuts.get("edit").unwrap().is_empty());
-        assert!(!shortcuts.get("history").unwrap().is_empty());
-        assert!(!shortcuts.get("process").unwrap().is_empty());
+        assert!(!shortcuts.get("Movement").unwrap().is_empty());
+        assert!(!shortcuts.get("Edit").unwrap().is_empty());
+        assert!(!shortcuts.get("History").unwrap().is_empty());
+        assert!(!shortcuts.get("Process").unwrap().is_empty());
     }
 
     #[test]
@@ -389,5 +390,48 @@ mod tests {
         // Test that uninstall can be combined with other flags (though uninstall takes precedence)
         let args = Args::try_parse_from(&["bk", "--uninstall", "-m"]).unwrap();
         assert!(args.uninstall && args.movement);
+    }
+
+    #[test]
+    fn test_table_display_format() {
+        let shortcuts = vec![
+            Shortcut::new("Test+a", "Test description 1"),
+            Shortcut::new("Test+b", "Test description 2"),
+        ];
+
+        let output_str = display_shortcuts(&shortcuts, "Test");
+
+        assert!(output_str.contains("Test related shortcuts"));
+        assert!(output_str.contains("Test+a"));
+        assert!(output_str.contains("Test description 1"));
+        assert!(output_str.contains("Test+b"));
+        assert!(output_str.contains("Test description 2"));
+    }
+
+    #[test]
+    fn test_display_all_shortcuts() {
+        let shortcuts_map = init_shortcuts();
+
+        let categories = ["Movement", "Edit", "History", "Process"];
+
+        // Build the combined output string
+        let mut output_str = String::new();
+        for &category in &categories {
+            if let Some(shortcuts) = shortcuts_map.get(category) {
+                output_str.push_str(&display_shortcuts(shortcuts, category));
+            }
+        }
+
+        // Verify all categories are displayed
+        assert!(output_str.contains("Movement related shortcuts"));
+        assert!(output_str.contains("Edit related shortcuts"));
+        assert!(output_str.contains("History related shortcuts"));
+        assert!(output_str.contains("Process related shortcuts"));
+
+        // Verify some key shortcuts from each category
+        assert!(output_str.contains("Ctrl+a")); // Movement
+        assert!(output_str.contains("Ctrl+l")); // Edit
+        assert!(output_str.contains("Ctrl+r")); // History
+        assert!(output_str.contains("Ctrl+c")); // Process
     }
 }
