@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::collections::HashMap;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(
     name = "bk",
     version,
@@ -232,5 +232,61 @@ mod tests {
         assert!(!shortcuts.get("edit").unwrap().is_empty());
         assert!(!shortcuts.get("history").unwrap().is_empty());
         assert!(!shortcuts.get("process").unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_args_parsing() {
+        use clap::Parser;
+
+        // Test parsing with no arguments
+        let args = Args::try_parse_from(&["bk"]).unwrap();
+        assert!(!args.movement && !args.edit && !args.recall && !args.process);
+
+        // Test parsing with single flag
+        let args = Args::try_parse_from(&["bk", "-m"]).unwrap();
+        assert!(args.movement && !args.edit && !args.recall && !args.process);
+
+        // Test parsing with multiple flags
+        let args = Args::try_parse_from(&["bk", "-me"]).unwrap();
+        assert!(args.movement && args.edit && !args.recall && !args.process);
+    }
+
+    #[test]
+    fn test_invalid_args() {
+        use clap::Parser;
+
+        // Test unknown short flag
+        let result = Args::try_parse_from(&["bk", "-x"]);
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+
+        // Test unknown long flag
+        let result = Args::try_parse_from(&["bk", "--unknown"]);
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+
+        // Test invalid flag combination (not really invalid in this case, but test malformed flag)
+        let result = Args::try_parse_from(&["bk", "--"]);
+        assert!(result.is_ok()); // -- is valid (end of options marker)
+
+        // Test invalid argument with value (our flags don't take values)
+        let result = Args::try_parse_from(&["bk", "--movement=true"]);
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), clap::error::ErrorKind::TooManyValues);
+
+        // Test typo in long flag
+        let result = Args::try_parse_from(&["bk", "--movment"]); // missing 'e'
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+
+        // Test positional arguments (which we don't accept)
+        let result = Args::try_parse_from(&["bk", "extra_arg"]);
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
     }
 }
