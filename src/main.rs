@@ -243,10 +243,10 @@ mod tests {
 
         let output = build_output(&args, &shortcuts);
 
-        assert!(output.contains("Movement shortcuts"));
-        assert!(output.contains("Edit shortcuts"));
-        assert!(output.contains("Recall shortcuts"));
-        assert!(output.contains("Process shortcuts"));
+        assert!(output.contains("Movement related shortcuts"));
+        assert!(output.contains("Edit related shortcuts"));
+        assert!(output.contains("Recall related shortcuts"));
+        assert!(output.contains("Process related shortcuts"));
     }
 
     #[test]
@@ -262,8 +262,8 @@ mod tests {
 
         let output = build_output(&args, &shortcuts);
 
-        assert!(output.contains("Movement shortcuts"));
-        assert!(!output.contains("Edit shortcuts"));
+        assert!(output.contains("Movement related shortcuts"));
+        assert!(!output.contains("Edit related shortcuts"));
     }
 
     #[test]
@@ -279,8 +279,8 @@ mod tests {
 
         let output = build_output(&args, &shortcuts);
 
-        assert!(output.contains("Movement shortcuts"));
-        assert!(output.contains("Edit shortcuts"));
-        assert!(!output.contains("Recall shortcuts"));
+        assert!(output.contains("Movement related shortcuts"));
+        assert!(output.contains("Edit related shortcuts"));
+        assert!(!output.contains("Recall related shortcuts"));
     }
 }
