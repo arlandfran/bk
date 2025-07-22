@@ -1,5 +1,39 @@
-use clap::{Arg, Command};
+use clap::Parser;
 use std::collections::HashMap;
+
+#[derive(Parser)]
+#[command(
+    name = "bk",
+    version,
+    about = "A CLI for referencing Bash keyboard shortcuts.",
+    long_about = "A CLI for referencing Bash keyboard shortcuts.
+
+Flags can be chained Unix-style: bk -me shows movement and edit shortcuts.
+Run without flags to show all shortcuts organized by category.",
+    after_help = "EXAMPLES:
+    bk           Show all shortcuts
+    bk -m        Show movement shortcuts only
+    bk -me       Show movement and edit shortcuts (chained)
+    bk -e -r     Show edit and recall shortcuts (separate)
+    bk --version Show version information"
+)]
+struct Args {
+    /// Show movement related shortcuts
+    #[arg(short, long)]
+    movement: bool,
+
+    /// Show edit related shortcuts
+    #[arg(short, long)]
+    edit: bool,
+
+    /// Show command recall (history) related shortcuts
+    #[arg(short, long)]
+    recall: bool,
+
+    /// Show process related shortcuts
+    #[arg(short, long)]
+    process: bool,
+}
 
 /// Structure to hold a keyboard shortcut with its key combination and description
 #[derive(Clone)]
@@ -134,89 +168,37 @@ fn display_all_shortcuts(shortcuts_map: &HashMap<&str, Vec<Shortcut>>) {
 }
 
 fn main() {
+    let args = Args::parse();
+
     // Initialize the shortcuts data structure
     let shortcuts_map = init_shortcuts();
 
-    // Set up the command-line argument parser using Clap
-    let matches = Command::new("bk")
-        .about("A CLI for referencing Bash keyboard shortcuts.")
-        .version(env!("CARGO_PKG_VERSION"))
-        .long_about(
-            r#"A CLI for referencing Bash keyboard shortcuts.
-
-Flags can be chained Unix-style: bk -me shows movement and edit shortcuts.
-Run without flags to show all shortcuts organized by category."#,
-        )
-        .after_help(
-            r#"EXAMPLES:
-    bk           Show all shortcuts
-    bk -m        Show movement shortcuts only
-    bk -me       Show movement and edit shortcuts (chained)
-    bk -e -r     Show edit and recall shortcuts (separate)
-    bk --version Show version information"#,
-        )
-        .arg(
-            Arg::new("movement")
-                .short('m')
-                .long("movement")
-                .help("Show movement related shortcuts")
-                .action(clap::ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("edit")
-                .short('e')
-                .long("edit")
-                .help("Show edit related shortcuts")
-                .action(clap::ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("recall")
-                .short('r')
-                .long("recall")
-                .help("Show command recall (history) related shortcuts")
-                .action(clap::ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("process")
-                .short('p')
-                .long("process")
-                .help("Show process related shortcuts")
-                .action(clap::ArgAction::SetTrue),
-        )
-        .get_matches();
-
-    // Check if any category flags are set
-    let movement_flag = matches.get_flag("movement");
-    let edit_flag = matches.get_flag("edit");
-    let recall_flag = matches.get_flag("recall");
-    let process_flag = matches.get_flag("process");
-
     // If no specific flags are provided, show all shortcuts
-    if !movement_flag && !edit_flag && !recall_flag && !process_flag {
+    if !args.movement && !args.edit && !args.recall && !args.process {
         display_all_shortcuts(&shortcuts_map);
         return;
     }
 
     // Display shortcuts based on the flags provided
-    if movement_flag {
+    if args.movement {
         if let Some(shortcuts) = shortcuts_map.get("movement") {
             display_shortcuts(shortcuts, "movement");
         }
     }
 
-    if edit_flag {
+    if args.edit {
         if let Some(shortcuts) = shortcuts_map.get("edit") {
             display_shortcuts(shortcuts, "edit");
         }
     }
 
-    if recall_flag {
+    if args.recall {
         if let Some(shortcuts) = shortcuts_map.get("history") {
             display_shortcuts(shortcuts, "recall");
         }
     }
 
-    if process_flag {
+    if args.process {
         if let Some(shortcuts) = shortcuts_map.get("process") {
             display_shortcuts(shortcuts, "process");
         }
