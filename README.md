@@ -1,6 +1,6 @@
 # bashkey (bk)
 
-A lightweight CLI for instantly referencing Bash keyboard shortcuts.
+![bk_demo](https://github.com/user-attachments/assets/c5a9f26e-c3a4-49a7-a7cd-bff44fc85236)
 
 ## Installation
 
@@ -38,7 +38,7 @@ $ bk -m
 $ bk -me
 
 # Filter ctrl key shortcuts
-$ bk | grep -i ctrl
+$ bk | grep ctrl
 
 # Uninstall bk
 $ bk --uninstall
