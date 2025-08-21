@@ -13,16 +13,9 @@
 ### Build from source
 
 ```bash
-# Clone the repository
 git clone https://github.com/yourusername/bk.git
 cd bk
-
-# Build the project
-cargo build --release
-
-# The binary will be available at target/release/bk
-# Optionally, install it to your PATH
-cargo install --path .
+cargo install --locked --path .
 ```
 
 ## Usage
@@ -30,6 +23,9 @@ cargo install --path .
 ```bash
 # Quick reference for all shortcuts
 $ bk
+
+# Scroll through output
+$ bk | less
 
 # Just show me movement related shortcuts
 $ bk -m
@@ -46,7 +42,7 @@ $ bk --uninstall
 
 ## References
 
-- [SS64 Bash Keyboard Shortcuts](https://ss64.com/mac/syntax-bashkeyboard.html) - Shortcuts source
+- [SS64 Bash Keyboard Shortcuts](https://ss64.com/bash/syntax-keyboard.html) - Shortcuts reference
 - [Command Line Interface Guidelines](https://clig.dev/) - CLI design principles
 - [Clap Documentation](https://docs.rs/clap/latest/clap/) - Argument parsing library
 - [Tabled Documentation](https://github.com/zhiburt/tabled/) - Pretty print table library
